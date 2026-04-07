@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housingmantra|Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #4c1d95;
+            --gold: #d4af37;
+            --gold-hover: #b8860b;
+            --bg: #0f172a;
+            --error: #f87171;
+            --success: #4ade80;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: 
+            radial-gradient(circle at center, #2e1065, #AC7C00);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-icon {
+            background: var(--gold);
+            color: var(--primary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+
+        h2 { color: var(--gold); text-align: center; margin: 0; letter-spacing: 1px; }
+        p.subtitle { text-align: center; color: #94a3b8; margin-bottom: 25px; font-size: 0.85rem; }
+
+        .db-error-box {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            display: none;
+            text-align: center;
+        }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.8rem; color: #cbd5e1; }
+        .field-wrapper { position: relative; }
+
+        .input-icon {
+            position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%); color: var(--gold);
+            opacity: 0.6; width: 16px; pointer-events: none;
+        }
+
+        input, textarea {
+            width: 100%; padding: 12px 12px 12px 38px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: white; box-sizing: border-box;
+            outline: none; transition: 0.2s; font-size: 0.9rem;
+        }
+        textarea { padding-top: 12px; resize: none; }
+
+        input.invalid, textarea.invalid {
+            border-color: var(--error) !important;
+            background: rgba(248, 113, 113, 0.05);
+        }
+
+        .error-hint { color: var(--error); font-size: 0.75rem; margin-top: 4px; display: none; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-hover));
+            color: #1e293b; width: 100%; padding: 14px; border: none;
+            border-radius: 10px; font-weight: 700; cursor: pointer;
+            margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+
+        .btn-google {
+            background: white; color: #1e293b; border: none;
+            width: 100%; padding: 12px; border-radius: 10px;
+            font-weight: 600; cursor: pointer; display: flex;
+            justify-content: center; align-items: center; gap: 10px;
+            margin-bottom: 15px; transition: 0.3s;
+        }
+        .btn-google:hover { background: #f1f5f9; }
+
+        .divider {
+            display: flex; align-items: center; text-align: center;
+            margin: 20px 0; color: #64748b; font-size: 0.75rem;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+
+        .forgot-link {
+            text-align: right; margin-top: -10px; margin-bottom: 15px;
+            font-size: 0.75rem; color: var(--gold); cursor: pointer;
+        }
+
+        .btn-outline {
+            background: transparent; border: 1px solid var(--gold);
+            color: var(--gold); width: 100%; padding: 10px; border-radius: 10px;
+            cursor: pointer; margin-top: 10px; font-weight: 600;
+        }
+
+        .spinner {
+            width: 18px; height: 18px; border: 3px solid rgba(30, 41, 59, 0.3);
+            border-radius: 50%; border-top-color: #1e293b;
+            animation: spin 0.8s linear infinite; display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer-links { margin-top: 15px; font-size: 0.8rem; text-align: center; color: #94a3b8; }
+        .footer-links span { color: var(--gold); cursor: pointer; text-decoration: underline; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center;
+            align-items: center; z-index: 9999; backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #1e293b; padding: 30px; border-radius: 20px;
+            text-align: center; border: 1px solid var(--gold); max-width: 400px;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="logo-icon"><i data-lucide="shield-check"></i></div>
+    <h2 id="formTitle">Housing Mantra</h2>
+    <p class="subtitle" id="formSubtitle">Login and access your dashboard</p>
+    
+    <div id="dbErrorBox" class="db-error-box"></div>
+
+    <div id="socialSection">
+        <button type="button" class="btn-google" onclick="handleGoogleLogin()">
+            <img src="https://www.google.com/favicon.ico" width="16" alt="google">
+            Continue with Google
+        </button>
+        <div class="divider">OR EMAIL</div>
+    </div>
+
+    <form id="authForm" novalidate onsubmit="handleSubmit(event)">
+        <div id="registerFields" class="hidden">
+            <div class="row">
+                <div class="input-group">
+                    <label>First Name*</label>
+                    <div class="field-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="fname" placeholder="John">
+                    </div>
+                    <div class="error-hint" id="err-fname">Min 3 letters, alphabets only.</div>
+                </div>
+                <div class="input-group">
+                    <label>Middle Name</label>
+                    <div class="field-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="mname" placeholder="Quincy">
+                    </div>
+                    <div class="error-hint" id="err-mname">Min 3 letters, alphabets only.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label>Last Name*</label>
+                    <div class="field-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="lname" placeholder="Doe">
+                    </div>
+                    <div class="error-hint" id="err-lname">Min 3 letters, alphabets only.</div>
+                </div>
+                <div class="input-group">
+                    <label>Phone Number*</label>
+                    <div class="field-wrapper">
+                        <i data-lucide="smartphone" class="input-icon"></i>
+                        <input type="text" id="phone" maxlength="10" placeholder="10-digit number">
+                    </div>
+                    <div class="error-hint" id="err-phone">Exactly 10 numerical digits required.</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Residential Address*</label>
+                <div class="field-wrapper">
+                    <i data-lucide="map" class="input-icon" style="top: 18px;"></i>
+                    <textarea id="address" rows="2" placeholder="Street, City, Zip..."></textarea>
+                </div>
+                <div class="error-hint" id="err-address">Address is required.</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Email Address*</label>
+            <div class="field-wrapper">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="email" placeholder="admin@luxury.com">
+            </div>
+            <div class="error-hint" id="err-email">Invalid email format.</div>
+        </div>
+
+        <div class="input-group">
+            <label id="passLabel">Password*</label>
+            <div class="field-wrapper">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
+            <div class="error-hint" id="err-password">Password is required.</div>
+        </div>
+
+        <div class="forgot-link" id="forgotPassLink" onclick="handleForgotPassword()">
+            Forgot Password?
+        </div>
+
+        <div class="input-group hidden" id="confirmPassGroup">
+            <label>Confirm Password*</label>
+            <div class="field-wrapper">
+                <i data-lucide="check-circle" class="input-icon"></i>
+                <input type="password" id="confirmPassword" placeholder="••••••••">
+            </div>
+            <div class="error-hint" id="err-confirmPassword">Passwords do not match.</div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn">
+            <span id="btnText">Sign In</span>
+            <div class="spinner" id="btnSpinner"></div>
+        </button>
+
+        <button type="button" id="backBtn" class="btn-outline hidden" onclick="toggleMode()">Back to Login</button>
+    </form>
+
+    <div class="footer-links">
+        <p id="toggleText">Don't have an account? <span onclick="toggleMode()">Create Account</span></p>
+        <p id="resendArea" class="hidden">Didn't get the mail? <span onclick="resendEmail()">Resend Verification Link</span></p>
+    </div>
+</div>
+
+<div id="emailModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="logo-icon" style="background: var(--success); color: white;"><i data-lucide="mail-check"></i></div>
+        <h3 id="modalTitle" style="color: var(--success)">Email Sent!</h3>
+        <p id="modalMsg" style="color: #cbd5e1;">A verification link has been sent to your email. Please verify it to log in.</p>
+        <button class="btn-primary" onclick="closeModal()">Got it</button>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    let isLoginMode = true;
+
+    const supabaseUrl = "https://xeesusgbdyrgxvzevjha.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhlZXN1c2diZHlyZ3h2emV2amhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NzI1MzksImV4cCI6MjA4ODQ0ODUzOX0.8TjnH50MO4YBu8liCJwnUu36hiX6zAwRpGOCPFVW7sI";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Redirect utility
+    const redirectToProfile = () => {
+        // Ensuring we use a full URL path to avoid "File Not Found" errors
+        const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+        window.location.href = `${baseUrl}/profile.html`;
+    };
+
+    window.addEventListener('load', async () => {
+        const { data: { session } } = await client.auth.getSession();
+        if (session) {
+            redirectToProfile();
+        }
+    });
+
+    client.auth.onAuthStateChange((event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+            redirectToProfile();
+        }
+    });
+
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('registerFields').classList.toggle('hidden');
+        document.getElementById('confirmPassGroup').classList.toggle('hidden');
+        document.getElementById('backBtn').classList.toggle('hidden');
+        document.getElementById('socialSection').classList.toggle('hidden');
+        document.getElementById('forgotPassLink').classList.toggle('hidden');
+        document.getElementById('dbErrorBox').style.display = 'none';
+        document.getElementById('formTitle').innerText = isLoginMode ? 'Admin Login' : 'Create Account';
+        document.getElementById('btnText').innerText = isLoginMode ? 'Sign In' : 'Register Account';
+        document.getElementById('toggleText').style.display = isLoginMode ? 'block' : 'none';
+        clearAllErrors();
+        lucide.createIcons();
+    }
+
+    async function handleGoogleLogin() {
+        const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+        const { error } = await client.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${baseUrl}/profile.html`
+            }
+        });
+        if (error) showError("Google Login Error: " + error.message);
+    }
+
+    async function handleForgotPassword() {
+        const email = document.getElementById('email').value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!emailRegex.test(email)) {
+            setFieldError('email', 'Enter a valid email to reset password.');
+            return;
+        }
+
+        const { error } = await client.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset-password.html',
+        });
+
+        if (error) {
+            showError("Reset Error: " + error.message);
+        } else {
+            document.getElementById('modalTitle').innerText = "Reset Link Sent!";
+            document.getElementById('modalMsg').innerText = "Check your inbox for the password reset instructions.";
+            document.getElementById('emailModal').style.display = 'flex';
+        }
+    }
+
+    function clearAllErrors() {
+        document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+        document.querySelectorAll('.error-hint').forEach(el => el.style.display = 'none');
+    }
+
+    function setFieldError(id, message) {
+        const input = document.getElementById(id);
+        const hint = document.getElementById('err-' + id);
+        if(input && hint) {
+            input.classList.add('invalid');
+            hint.innerText = message;
+            hint.style.display = 'block';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('emailModal').style.display = 'none';
+        if (!isLoginMode) toggleMode();
+    }
+
+    function showError(msg) {
+        const box = document.getElementById('dbErrorBox');
+        box.innerText = msg;
+        box.style.display = 'block';
+    }
+
+    async function resendEmail() {
+        const email = document.getElementById('email').value;
+        const { error } = await client.auth.resend({ type: 'signup', email });
+        if (error) showError("Resend failed: " + error.message);
+        else alert("Verification link resent!");
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        clearAllErrors();
+        document.getElementById('dbErrorBox').style.display = 'none';
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        let hasLocalError = false;
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setFieldError('email', 'Invalid email format.');
+            hasLocalError = true;
+        }
+        if (password.length < 1) {
+            setFieldError('password', 'Password is required.');
+            hasLocalError = true;
+        }
+
+        if (!isLoginMode) {
+            const alphaOnly = /^[A-Za-z]{3,}$/;
+            const phoneRegex = /^[0-9]{10}$/;
+            const passPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$/;
+
+            if (!alphaOnly.test(document.getElementById('fname').value)) {
+                setFieldError('fname', 'Min 3 letters, alphabets only.');
+                hasLocalError = true;
+            }
+            if (!alphaOnly.test(document.getElementById('lname').value)) {
+                setFieldError('lname', 'Min 3 letters, alphabets only.');
+                hasLocalError = true;
+            }
+            if (!phoneRegex.test(document.getElementById('phone').value)) {
+                setFieldError('phone', 'Exactly 10 numerical digits required.');
+                hasLocalError = true;
+            }
+            if (document.getElementById('address').value.trim() === "") {
+                setFieldError('address', 'Address is required.');
+                hasLocalError = true;
+            }
+            if (!passPolicy.test(password)) {
+                setFieldError('password', 'Min 6 chars, 1 upper, 1 lower, 1 special.');
+                hasLocalError = true;
+            }
+            if (password !== document.getElementById('confirmPassword').value) {
+                setFieldError('confirmPassword', 'Passwords do not match.');
+                hasLocalError = true;
+            }
+        }
+
+        if (hasLocalError) return;
+
+        const btn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('btnSpinner');
+        btn.disabled = true; spinner.style.display = 'block';
+
+        try {
+            if (isLoginMode) {
+                const { error } = await client.auth.signInWithPassword({ email, password });
+                if (error) {
+                    if (error.message.includes("Email not confirmed")) {
+                        showError("Please verify your email before logging in.");
+                        document.getElementById('resendArea').classList.remove('hidden');
+                    } else {
+                        showError("Login failed: " + error.message);
+                    }
+                    throw error;
+                }
+                redirectToProfile();
+            } else {
+                const userData = {
+                    first_name: document.getElementById('fname').value,
+                    middle_name: document.getElementById('mname').value,
+                    last_name: document.getElementById('lname').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    email: email
+                };
+
+                const { data: authData, error: authError } = await client.auth.signUp({
+                    email, password, options: { data: userData }
+                });
+
+                if (authError) {
+                    showError("Auth Error: " + authError.message);
+                    throw authError;
+                }
+
+                if (authData.user) {
+                    const { error: dbError } = await client
+                        .from('users')
+                        .upsert([{ id: authData.user.id, ...userData }], { onConflict: 'id' });
+
+                    if (dbError) {
+                        showError("DB Error: " + dbError.message + " (Code: " + dbError.code + ")");
+                        throw dbError;
+                    }
+                    document.getElementById('modalTitle').innerText = "Email Sent!";
+                    document.getElementById('modalMsg').innerText = "A verification link has been sent to your email. Please verify it to log in.";
+                    document.getElementById('emailModal').style.display = 'flex';
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            btn.disabled = false; spinner.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>

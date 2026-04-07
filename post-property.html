@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Post Property</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4c1d95;
+            --primary-light: #6d28d9;
+            --primary-dark: #2e1065;
+            --gold: #d4af37;
+            --gold-light: #f1d592;
+            --gold-dark: #b8860b;
+            --bg: #f4f0fb;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --white: #ffffff;
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --success: #16a34a;
+            --success-light: #f0fdf4;
+            --border: #ddd6fe;
+            --border-focus: #6d28d9;
+            --card-shadow: 0 20px 60px rgba(76,29,149,0.10);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            display: none;
+            min-height: 100vh;
+        }
+
+        /* Background pattern */
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 10% 20%, rgba(109,40,217,0.07) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 80%, rgba(212,175,55,0.06) 0%, transparent 50%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--gold);
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 4px 20px rgba(46,16,101,0.3);
+        }
+        .navbar h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .btn-logout {
+            background: none;
+            border: 1.5px solid var(--gold);
+            color: var(--gold);
+            padding: 7px 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            letter-spacing: 0.03em;
+        }
+        .btn-logout:hover { background: var(--gold); color: var(--primary-dark); }
+
+        /* ── LAYOUT ── */
+        .container { padding: 40px 20px; display: flex; justify-content: center; position: relative; z-index: 1; }
+
+        .card {
+            background: var(--white);
+            padding: 44px 48px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(109,40,217,0.1);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary);
+            font-size: 1.9rem;
+            margin-bottom: 6px;
+        }
+        .card-subtitle { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 32px; }
+
+        /* ── SECTION ── */
+        .section {
+            background: linear-gradient(135deg, #faf8ff 0%, #f8f4ff 100%);
+            padding: 24px 24px 18px;
+            border-radius: 14px;
+            border-left: 5px solid var(--primary);
+            margin: 28px 0;
+            position: relative;
+        }
+        .section h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 18px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ── GRID ── */
+        .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+        /* ── INPUTS ── */
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-icon { position: absolute; left: 13px; top: 40px; color: var(--primary); width: 17px; height: 17px; pointer-events: none; }
+        .input-icon-textarea { top: 42px; }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 7px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        label .required-star { color: var(--danger); margin-left: 2px; }
+
+        input[type="text"], input[type="date"], input[type="number"], textarea {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.97rem;
+            color: var(--text);
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, textarea:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(109,40,217,0.1);
+        }
+        input.error, textarea.error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+        textarea { resize: vertical; min-height: 80px; }
+
+        /* Input without icon */
+        .no-icon-input { padding-left: 14px !important; }
+
+        /* ── CUSTOM DROPDOWN ── */
+        .custom-select-wrapper { position: relative; }
+        .custom-select {
+            width: 100%;
+            padding: 12px 40px 12px 40px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.97rem;
+            color: var(--text);
+            background: #fff;
+            cursor: pointer;
+            user-select: none;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-height: 47px;
+        }
+        .custom-select.error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+        .custom-select.open { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(109,40,217,0.1); }
+        .custom-select .select-text { flex: 1; color: var(--text); }
+        .custom-select .select-text.placeholder { color: #94a3b8; }
+        .select-chevron { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: var(--primary); transition: transform 0.2s; pointer-events: none; }
+        .custom-select.open ~ .select-chevron, .custom-select-wrapper.open .select-chevron { transform: translateY(-50%) rotate(180deg); }
+
+        .dropdown-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(76,29,149,0.15);
+            z-index: 200;
+            overflow: hidden;
+            display: none;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .dropdown-list.open { display: block; animation: dropIn 0.15s ease; }
+        @keyframes dropIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .dropdown-item {
+            padding: 11px 16px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.15s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .dropdown-item:hover { background: #f3f0ff; color: var(--primary); }
+        .dropdown-item.selected { background: var(--primary); color: #fff; font-weight: 600; }
+        .dropdown-item.placeholder-item { color: #94a3b8; }
+
+        /* Inline unit dropdown (price, area, distance) */
+        .input-with-unit { display: flex; gap: 8px; align-items: flex-start; }
+        .input-with-unit input { flex: 1; }
+        .unit-select-wrapper { position: relative; min-width: 86px; flex-shrink: 0; }
+        .unit-select-btn {
+            width: 100%;
+            padding: 12px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f3f0ff, #ede9ff);
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between; gap: 4px;
+            white-space: nowrap;
+            transition: border-color 0.2s;
+        }
+        .unit-select-btn:hover { border-color: var(--primary-light); }
+        .unit-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(76,29,149,0.15);
+            z-index: 300;
+            display: none;
+            overflow: hidden;
+        }
+        .unit-dropdown.open { display: block; animation: dropIn 0.15s ease; }
+        .unit-option {
+            padding: 9px 12px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .unit-option:hover { background: #f3f0ff; color: var(--primary); }
+        .unit-option.selected { background: var(--primary); color: #fff; }
+
+        /* ── ERRORS ── */
+        .error-msg { color: var(--danger); font-size: 0.78rem; margin-top: 5px; display: none; }
+        .error-msg.visible { display: block; }
+
+        /* ── DYNAMIC ROWS ── */
+        .dynamic-row {
+            display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start;
+        }
+        .dynamic-row .row-inputs { display: flex; gap: 10px; flex: 1; align-items: flex-start; flex-wrap: wrap; }
+        .btn-remove {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: var(--danger);
+            border: 1.5px solid #fca5a5;
+            border-radius: 8px;
+            padding: 10px 11px;
+            cursor: pointer;
+            display: flex; align-items: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            margin-top: 2px;
+        }
+        .btn-remove:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .btn-add {
+            background: transparent;
+            color: var(--primary);
+            border: 2px dashed var(--primary-light);
+            width: 100%;
+            padding: 11px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-top: 8px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+        }
+        .btn-add:hover { background: #f3f0ff; border-color: var(--primary); }
+
+        /* ── SUBMIT BUTTON ── */
+        .btn-submit {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: white;
+            padding: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            width: 100%;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 28px;
+            font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 4px 20px rgba(212,175,55,0.35);
+            transition: all 0.2s;
+        }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(212,175,55,0.45); }
+        .btn-submit:active { transform: translateY(0); }
+
+        /* ── UPLOAD AREA ── */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #faf8ff;
+            position: relative;
+        }
+        .upload-area:hover { border-color: var(--primary-light); background: #f3f0ff; }
+        .upload-area input[type="file"] { display: none; }
+        .upload-icon { color: var(--primary); margin-bottom: 8px; }
+        .upload-text { font-size: 0.88rem; color: var(--text-muted); }
+        .upload-text strong { color: var(--primary); }
+        .upload-limit-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-top: 6px;
+            letter-spacing: 0.04em;
+        }
+
+        /* Preview thumbnails */
+        .photo-previews {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px;
+        }
+        .preview-thumb {
+            position: relative; width: 80px; height: 70px;
+            border-radius: 8px; overflow: hidden;
+            border: 2px solid var(--border);
+            background: #eee;
+        }
+        .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-remove {
+            position: absolute; top: 2px; right: 2px;
+            background: rgba(220,38,38,0.85);
+            color: #fff; border: none; border-radius: 50%;
+            width: 20px; height: 20px; cursor: pointer;
+            font-size: 11px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ── UPLOAD PROGRESS ── */
+        .upload-progress-wrap { margin-top: 20px; display: none; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+        .progress-track {
+            width: 100%; height: 10px;
+            background: #e9d5ff;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--gold));
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+        #uploadStatus { text-align: center; margin-top: 10px; font-weight: 600; font-size: 0.92rem; color: var(--primary); }
+        .btn-cancel-upload {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin: 10px auto 0;
+            background: none;
+            border: 1.5px solid var(--danger);
+            color: var(--danger);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 7px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel-upload:hover { background: var(--danger); color: #fff; }
+
+        /* ── CUSTOM ALERT TOAST ── */
+        .toast-container {
+            position: fixed; top: 80px; right: 24px;
+            z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: all;
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            animation: toastIn 0.3s ease;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            backdrop-filter: blur(8px);
+        }
+        @keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(30px); } }
+        .toast.removing { animation: toastOut 0.3s ease forwards; }
+        .toast-error { background: #fff0f0; border: 1.5px solid #fca5a5; color: #991b1b; }
+        .toast-success { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
+        .toast-warning { background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; }
+        .toast-icon { flex-shrink: 0; margin-top: 1px; }
+        .toast-body { flex: 1; }
+        .toast-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 2px; }
+        .toast-close { background: none; border: none; cursor: pointer; opacity: 0.5; padding: 0; flex-shrink: 0; transition: opacity 0.15s; }
+        .toast-close:hover { opacity: 1; }
+
+        /* ── ERROR SUMMARY BOX ── */
+        .error-summary {
+            background: #fff0f0;
+            border: 1.5px solid #fca5a5;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error-summary.visible { display: block; }
+        .error-summary-title { font-weight: 700; color: #991b1b; font-size: 0.92rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .error-summary ul { padding-left: 18px; color: #b91c1c; font-size: 0.87rem; line-height: 1.7; }
+
+        /* ── SUCCESS MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(46,16,101,0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .modal {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px 40px 40px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(76,29,149,0.25);
+            animation: modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            border: 1.5px solid rgba(109,40,217,0.15);
+            position: relative;
+        }
+        @keyframes modalPop { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+        .modal-success-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            border: 3px solid #6ee7b7;
+        }
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .modal-body { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 28px; }
+        .btn-modal-close {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 13px 36px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: 0.97rem;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            box-shadow: 0 4px 16px rgba(76,29,149,0.3);
+            transition: all 0.2s;
+        }
+        .btn-modal-close:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(76,29,149,0.4); }
+
+        /* Confetti dots */
+        .modal-confetti { position: absolute; inset: 0; overflow: hidden; border-radius: 24px; pointer-events: none; }
+        .confetti-dot {
+            position: absolute;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            animation: confettiFall 2.5s ease-in forwards;
+        }
+        @keyframes confettiFall {
+            0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(300px) rotate(360deg); }
+        }
+
+        /* ── DIVIDER ── */
+        .section-divider { border: none; border-top: 1.5px solid #ede9ff; margin: 8px 0 28px; }
+
+        /* ── SCROLLBAR ── */
+        .dropdown-list::-webkit-scrollbar { width: 6px; }
+        .dropdown-list::-webkit-scrollbar-track { background: #f3f0ff; }
+        .dropdown-list::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 10px; }
+
+        @media (max-width: 700px) {
+            .card { padding: 24px 18px; }
+            .grid-row { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal">
+        <div class="modal-confetti" id="modalConfetti"></div>
+        <div class="modal-success-icon">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div class="modal-title">Property Listed!</div>
+        <div class="modal-body">Your property has been successfully published and is now live on the portal. All details have been saved.</div>
+        <button class="btn-modal-close" onclick="closeSuccessModal()">Done — Post Another</button>
+    </div>
+</div>
+
+<div class="navbar">
+    <h3><i data-lucide="shield-check"></i>Housingmantra</h3>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-title">Post New Property</div>
+        <div class="card-subtitle">Fill in all required details to list a new luxury property.</div>
+
+        <form id="propertyForm" novalidate autocomplete="off">
+
+            <!-- ── DEVELOPER DETAILS ── -->
+            <div class="section">
+                <h3><i data-lucide="building-2"></i> Developer Details</h3>
+
+                <!-- Auto-filled user info banner -->
+                <div id="userInfoBanner" style="background:linear-gradient(135deg,#f3f0ff,#ede9ff);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8l-2 4h12z"/></svg>
+                        <span style="font-size:0.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">User Code-</span>
+                        <span id="autoUsercode" style="font-size:0.88rem;color:var(--text);font-weight:600;">—</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                        <span style="font-size:0.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">Name-</span>
+                        <span id="autoUserName" style="font-size:0.88rem;color:var(--text);font-weight:600;">—</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                        <span style="font-size:0.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">Email-</span>
+                        <span id="autoUserEmail" style="font-size:0.88rem;color:var(--text);font-weight:600;">—</span>
+                    </div>
+                </div>
+
+                <div class="grid-row">
+                    <div class="input-group">
+                        <label for="developer">Developer Name <span class="required-star">*</span></label>
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V2l6 4 6-4v20"/><path d="M6 12h12"/><path d="M6 17h12"/><path d="M6 7h12"/></svg>
+                        <input type="text" id="developer" placeholder="E.g. Godrej Properties" autocomplete="off">
+                        <div class="error-msg" id="developer-error"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="reraId">RERA ID</label>
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="text" id="reraId" placeholder="E.g. P52100012345 / MH-2023-04" autocomplete="off">
+                        <div class="error-msg" id="reraId-error"></div>
+                    </div>
+                </div>
+                <div class="grid-row">
+                    <div class="input-group">
+                        <label for="contactNumber">Contact Number <span class="required-star">*</span></label>
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <input type="text" id="contactNumber" placeholder="E.g. +91 9876543210" autocomplete="off" maxlength="15">
+                        <div class="error-msg" id="contactNumber-error"></div>
+                    </div>
+                    <div class="input-group" style="visibility:hidden;"></div>
+                </div>
+                <div class="input-group">
+                    <label for="address">Property Address <span class="required-star">*</span></label>
+                    <svg class="input-icon input-icon-textarea" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <textarea id="address" rows="3" placeholder="E.g. 12, MG Road, Andheri West, Mumbai"></textarea>
+                    <div class="error-msg" id="address-error"></div>
+                </div>
+            </div>
+
+            <!-- ── LOCATION ── -->
+            <div class="section">
+                <h3><i data-lucide="map-pin"></i> Location Details</h3>
+                <div class="grid-row grid-4">
+                    <div class="input-group">
+                        <label>State <span class="required-star">*</span></label>
+                        <div class="custom-select-wrapper" id="state-wrapper">
+                            <div class="custom-select" id="state-select" onclick="toggleDropdown('state-dd', this)">
+                                <span class="select-text placeholder" id="state-select-text">Select State</span>
+                            </div>
+                            <svg class="select-chevron" id="state-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            <input type="hidden" id="state" value="">
+                            <div class="dropdown-list" id="state-dd">
+                                <div class="dropdown-item placeholder-item" data-value="">Select State</div>
+                                <div class="dropdown-item" data-value="Maharashtra" onclick="selectDropdown('state-dd','state','state-select-text',this,'state-chevron'); loadCities();">Maharashtra</div>
+                                <div class="dropdown-item" data-value="Jharkhand" onclick="selectDropdown('state-dd','state','state-select-text',this,'state-chevron'); loadCities();">Jharkhand</div>
+                                <div class="dropdown-item" data-value="Delhi" onclick="selectDropdown('state-dd','state','state-select-text',this,'state-chevron'); loadCities();">Delhi</div>
+                            </div>
+                        </div>
+                        <div class="error-msg" id="state-error"></div>
+                    </div>
+                    <div class="input-group">
+                        <label>City <span class="required-star">*</span></label>
+                        <div class="custom-select-wrapper" id="city-wrapper">
+                            <div class="custom-select" id="city-select" onclick="toggleDropdown('city-dd', this)">
+                                <span class="select-text placeholder" id="city-select-text">Select City</span>
+                            </div>
+                            <svg class="select-chevron" id="city-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            <input type="hidden" id="city" value="">
+                            <div class="dropdown-list" id="city-dd"></div>
+                        </div>
+                        <div class="error-msg" id="city-error"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="locality">Locality <span class="required-star">*</span></label>
+                        <input type="text" id="locality" placeholder="E.g. Baner" class="no-icon-input" autocomplete="off">
+                        <div class="error-msg" id="locality-error"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pincode">Pincode <span class="required-star">*</span></label>
+                        <input type="text" id="pincode" placeholder="E.g. 411045" class="no-icon-input" autocomplete="off" maxlength="6">
+                        <div class="error-msg" id="pincode-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── BHK SECTION ── -->
+            <div class="section">
+                <h3><i data-lucide="bed"></i> BHK Pricing & Area</h3>
+                <div id="bhkContainer"></div>
+                <button type="button" class="btn-add" onclick="addBhk()">+ Add BHK Variant</button>
+            </div>
+
+            <!-- ── AMENITIES ── -->
+            <div class="section">
+                <h3><i data-lucide="check-circle"></i> Amenities</h3>
+                <div id="amenitiesContainer" style="display:grid; grid-template-columns:1fr 1fr; gap:0 16px;"></div>
+                <button type="button" class="btn-add" onclick="addAmenity()">+ Add Amenity</button>
+            </div>
+
+            <!-- ── NEARBY LANDMARKS ── -->
+            <div class="section">
+                <h3><i data-lucide="milestone"></i> Nearby Landmarks</h3>
+                <div id="nearbyContainer"></div>
+                <button type="button" class="btn-add" onclick="addNearby()">+ Add Landmark</button>
+            </div>
+
+            <!-- ── STATUS + POSSESSION ── -->
+            <div class="grid-row" style="margin-bottom:0">
+                <div class="input-group">
+                    <label>Status <span class="required-star">*</span></label>
+                    <div class="custom-select-wrapper">
+                        <div class="custom-select" id="status-select" onclick="toggleDropdown('status-dd', this)">
+                            <span class="select-text placeholder" id="status-select-text">Select Status</span>
+                        </div>
+                        <svg class="select-chevron" id="status-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <input type="hidden" id="status" value="">
+                        <div class="dropdown-list" id="status-dd">
+                            <div class="dropdown-item placeholder-item" data-value="">Select Status</div>
+                            <div class="dropdown-item" data-value="Ready" onclick="selectDropdown('status-dd','status','status-select-text',this,'status-chevron')">Ready to Move</div>
+                            <div class="dropdown-item" data-value="Under Construction" onclick="selectDropdown('status-dd','status','status-select-text',this,'status-chevron')">Under Construction</div>
+                        </div>
+                    </div>
+                    <div class="error-msg" id="status-error"></div>
+                </div>
+                <div class="input-group">
+                    <label for="possession">Possession Date <span class="required-star">*</span></label>
+                    <input type="date" id="possession" class="no-icon-input">
+                    <div class="error-msg" id="possession-error"></div>
+                </div>
+            </div>
+
+            <!-- ── OVERVIEW ── -->
+            <div class="input-group">
+                <label for="overview">Project Overview <span class="required-star">*</span></label>
+                <textarea id="overview" rows="5" placeholder="Describe the project highlights, location benefits, and unique features..." style="padding-left:15px;"></textarea>
+                <div class="error-msg" id="overview-error"></div>
+            </div>
+
+            <!-- ── IMAGE UPLOADS ── -->
+            <div class="grid-row">
+                <div class="section">
+                    <h3><i data-lucide="image"></i> Interior Photos <span class="required-star">*</span></h3>
+                    <div class="upload-area" onclick="document.getElementById('interior').click()">
+                        <input type="file" id="interior" multiple accept="image/*" onchange="handleFileSelect('interior', 'interior-previews', 1, 5)">
+                        <div class="upload-icon"><i data-lucide="upload-cloud"></i></div>
+                        <div class="upload-text"><strong>Click to upload</strong> interior photos</div>
+                        <div class="upload-limit-badge">Min 1 • Max 5 • 5MB each</div>
+                    </div>
+                    <div class="photo-previews" id="interior-previews"></div>
+                    <div class="error-msg" id="interior-error"></div>
+                </div>
+                <div class="section">
+                    <h3><i data-lucide="home"></i> Exterior Photos <span class="required-star">*</span></h3>
+                    <div class="upload-area" onclick="document.getElementById('exterior').click()">
+                        <input type="file" id="exterior" multiple accept="image/*" onchange="handleFileSelect('exterior', 'exterior-previews', 1, 5)">
+                        <div class="upload-icon"><i data-lucide="upload-cloud"></i></div>
+                        <div class="upload-text"><strong>Click to upload</strong> exterior photos</div>
+                        <div class="upload-limit-badge">Min 1 • Max 5 • 5MB each</div>
+                    </div>
+                    <div class="photo-previews" id="exterior-previews"></div>
+                    <div class="error-msg" id="exterior-error"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3><i data-lucide="star"></i> Main Featured Image <span class="required-star">*</span></h3>
+                <div class="upload-area" onclick="document.getElementById('mainImage').click()">
+                    <input type="file" id="mainImage" accept="image/*" onchange="handleFileSelect('mainImage', 'main-previews', 1, 1)">
+                    <div class="upload-icon"><i data-lucide="upload-cloud"></i></div>
+                    <div class="upload-text"><strong>Click to upload</strong> the featured cover image</div>
+                    <div class="upload-limit-badge">1 photo only • 5MB max</div>
+                </div>
+                <div class="photo-previews" id="main-previews"></div>
+                <div class="error-msg" id="mainImage-error"></div>
+            </div>
+
+            <!-- ── VIRTUAL VIDEO TOUR ── -->
+            <div class="section">
+                <h3><i data-lucide="video"></i> Virtual Video Tour</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Upload a walkthrough or virtual tour video for this property. Supported: MP4, MOV, WEBM (max 100MB).</p>
+                <div class="upload-area" id="videoUploadArea" onclick="document.getElementById('virtualVideo').click()" style="border-color: #c4b5fd;">
+                    <input type="file" id="virtualVideo" accept="video/mp4,video/mov,video/webm,video/quicktime" onchange="handleVideoSelect()">
+                    <div class="upload-icon"><i data-lucide="film"></i></div>
+                    <div class="upload-text"><strong>Click to upload</strong> a virtual tour video</div>
+                    <div class="upload-limit-badge" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);">MP4 / MOV / WEBM • Max 100MB</div>
+                </div>
+                <div id="videoPreviewWrap" style="display:none;margin-top:14px;position:relative;border-radius:12px;overflow:hidden;background:#000;max-height:260px;">
+                    <video id="videoPreviewEl" controls style="width:100%;max-height:260px;display:block;"></video>
+                    <button type="button" onclick="removeVideo()" style="position:absolute;top:8px;right:8px;background:rgba(220,38,38,0.85);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+                </div>
+                <div id="videoFileName" style="font-size:0.82rem;color:var(--text-muted);margin-top:8px;"></div>
+                <div class="error-msg" id="virtualVideo-error"></div>
+            </div>
+
+            <!-- ── SOCIAL MEDIA VIDEO LINKS ── -->
+            <div class="section">
+                <h3><i data-lucide="share-2"></i> Social Media & Video Links</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">Paste links to property videos or tours hosted on YouTube, Facebook or Instagram.</p>
+                <div class="grid-row">
+                    <div class="input-group">
+                        <label for="youtubeLink">
+                            <span style="display:flex;align-items:center;gap:7px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="#dc2626"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 21.8 12 21.8 12 21.8s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.2.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zm-13.4 8.8V8.4l8.1 3.7-8.1 3.7z"/></svg>
+                                YouTube Link
+                            </span>
+                        </label>
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <input type="text" id="youtubeLink" placeholder="https://youtube.com/watch?v=..." class="social-link-input" autocomplete="off">
+                        <div class="error-msg" id="youtubeLink-error"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="facebookLink">
+                            <span style="display:flex;align-items:center;gap:7px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.41 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.88v2.27h3.32l-.53 3.49h-2.79V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+                                Facebook Link
+                            </span>
+                        </label>
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <input type="text" id="facebookLink" placeholder="https://facebook.com/watch?v=..." class="social-link-input" autocomplete="off">
+                        <div class="error-msg" id="facebookLink-error"></div>
+                    </div>
+                </div>
+                <div class="input-group" style="max-width:50%;padding-right:9px;">
+                    <label for="instagramLink">
+                        <span style="display:flex;align-items:center;gap:7px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="url(#igGrad)" stroke-width="2" style="flex-shrink:0;">
+                                <defs><linearGradient id="igGrad" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs>
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="url(#igGrad)" stroke="none"/>
+                            </svg>
+                            Instagram Link
+                        </span>
+                    </label>
+                    <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <input type="text" id="instagramLink" placeholder="https://instagram.com/reel/..." class="social-link-input" autocomplete="off">
+                    <div class="error-msg" id="instagramLink-error"></div>
+                </div>
+            </div>
+
+            <!-- Error Summary -->
+            <div class="error-summary" id="errorSummary">
+                <div class="error-summary-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Please fix the following errors:
+                </div>
+                <ul id="errorList"></ul>
+            </div>
+
+            <button type="button" class="btn-submit" onclick="submitProperty()">
+                <span style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+                    Upload & Publish Property
+                </span>
+            </button>
+
+            <!-- Upload Progress -->
+            <div class="upload-progress-wrap" id="uploadProgressWrap">
+                <div class="progress-label">
+                    <span id="uploadStatus">Preparing...</span>
+                    <span id="uploadPercent">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <button type="button" class="btn-cancel-upload" id="cancelUploadBtn" onclick="cancelUpload()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    Cancel Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    /* ─────────────────────────────────────────────────────────────────
+       SUPABASE CONFIG
+    ───────────────────────────────────────────────────────────────── */
+    const supabaseUrl = "https://xeesusgbdyrgxvzevjha.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhlZXN1c2diZHlyZ3h2emV2amhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NzI1MzksImV4cCI6MjA4ODQ0ODUzOX0.8TjnH50MO4YBu8liCJwnUu36hiX6zAwRpGOCPFVW7sI";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    /* ─────────────────────────────────────────────────────────────────
+       FILE STORE (holds processed File objects after selection)
+    ───────────────────────────────────────────────────────────────── */
+    const fileStore = { interior: [], exterior: [], mainImage: [] };
+
+    /* ─────────────────────────────────────────────────────────────────
+       CANCEL FLAG
+    ───────────────────────────────────────────────────────────────── */
+    let uploadCancelled = false;
+
+    /* ─────────────────────────────────────────────────────────────────
+       SESSION CHECK — robust with fallback timeout
+    ───────────────────────────────────────────────────────────────── */
+    let sessionResolved = false;
+
+    function revealApp() {
+        if (sessionResolved) return;
+        sessionResolved = true;
+        document.body.style.display = "block";
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        initDefaultRows();
+        loadUserInfo();
+    }
+
+    // Primary: onAuthStateChange fires reliably after SDK initialises
+    client.auth.onAuthStateChange((event, session) => {
+        if (sessionResolved) return;
+        if (session) {
+            revealApp();
+        } else {
+            // No session — redirect to login
+            sessionResolved = true;
+            window.location.href = "login.html";
+        }
+    });
+
+    // Fallback: also call getSession immediately (covers cached sessions)
+    (async () => {
+        try {
+            const { data: { session } } = await client.auth.getSession();
+            if (sessionResolved) return;
+            if (session) {
+                revealApp();
+            } else {
+                // Wait a moment for onAuthStateChange to fire first
+                setTimeout(() => {
+                    if (!sessionResolved) {
+                        sessionResolved = true;
+                        window.location.href = "login.html";
+                    }
+                }, 1500);
+            }
+        } catch (err) {
+            console.error("Session check error:", err);
+            if (!sessionResolved) {
+                sessionResolved = true;
+                window.location.href = "login.html";
+            }
+        }
+    })();
+
+    /* ─────────────────────────────────────────────────────────────────
+       HELPERS
+    ───────────────────────────────────────────────────────────────── */
+    function toTitleCase(str) { return str.replace(/\b\w/g, c => c.toUpperCase()); }
+    function normalizeSpaces(str) { return str.trim().replace(/\s{2,}/g, ' '); }
+
+    /* ─────────────────────────────────────────────────────────────────
+       PRICE LABEL — converts digit input to Lac / Crore readable text
+    ───────────────────────────────────────────────────────────────── */
+    // Convert raw rupee number to human-readable Lac / Crore words
+    function numberToIndianWords(num) {
+        if (!num || isNaN(num)) return '';
+        if (num >= 1e7) {
+            const cr = (num / 1e7);
+            const crRound = parseFloat(cr.toFixed(2));
+            return `₹ ${crRound} Crore`;
+        } else if (num >= 1e5) {
+            const lac = (num / 1e5);
+            const lacRound = parseFloat(lac.toFixed(2));
+            return `₹ ${lacRound} Lac`;
+        } else if (num >= 1000) {
+            const k = (num / 1000);
+            const kRound = parseFloat(k.toFixed(2));
+            return `₹ ${kRound} Thousand`;
+        } else {
+            return `₹ ${num}`;
+        }
+    }
+
+    function updatePriceLabel(id) {
+        const val = parseFloat(document.getElementById(`bhk-price-${id}`).value);
+        const labelEl = document.getElementById(`bhk-price-label-${id}`);
+        if (!labelEl) return;
+        if (!val || isNaN(val) || val <= 0) { labelEl.textContent = ''; return; }
+        labelEl.textContent = numberToIndianWords(val);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       LOAD LOGGED-IN USER INFO from Supabase auth + profiles table
+    ───────────────────────────────────────────────────────────────── */
+    // Store current user's profile data globally so we can use it during submit
+    let currentUserProfile = null;
+
+    async function loadUserInfo() {
+        try {
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) return;
+            const user = session.user;
+
+            // Fetch directly from users table using auth id — same as profile page
+            const { data, error } = await client
+                .from('users')
+                .select('first_name, middle_name, last_name, email, user_code')
+                .eq('id', user.id)
+                .single();
+
+            if (error) console.warn('Could not load user from users table:', error.message);
+
+            const firstName  = data?.first_name  || '';
+            const middleName = data?.middle_name  || '';
+            const lastName   = data?.last_name   || '';
+            const fullName   = [firstName, middleName, lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || '—';
+            const email      = data?.email       || user.email || '—';
+            const code       = data?.user_code   || '—';
+
+            document.getElementById('autoUsercode').textContent = code;
+            document.getElementById('autoUserName').textContent  = fullName;
+            document.getElementById('autoUserEmail').textContent = email;
+
+            // Save for use during property submission
+            currentUserProfile = { id: user.id, user_code: code, name: fullName, email };
+
+        } catch (e) {
+            console.warn('Could not load user profile:', e.message);
+        }
+    }
+
+        function showError(fieldId, message) {
+        const el = document.getElementById(fieldId) || document.querySelector(`#${fieldId}-select`);
+        const errEl = document.getElementById(fieldId + '-error');
+        if (el) el.classList.add('error');
+        if (errEl) { errEl.textContent = message; errEl.classList.add('visible'); }
+    }
+    function clearError(fieldId) {
+        const el = document.getElementById(fieldId) || document.querySelector(`#${fieldId}-select`);
+        const errEl = document.getElementById(fieldId + '-error');
+        if (el) el.classList.remove('error');
+        if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+    }
+
+    function attachInputBehavior(input, opts = {}) {
+        input.addEventListener('input', function () {
+            let val = this.value;
+            val = val.replace(/  +/g, ' ');
+            if (opts.alphaOnly) { val = val.replace(/[^a-zA-Z\s]/g, '').replace(/  +/g, ' '); }
+            if (opts.numericOnly) { val = val.replace(/\D/g, ''); }
+            if (opts.reraId) { val = val.replace(/[^a-zA-Z0-9\-\/]/g, '').toUpperCase(); }
+            if (!opts.noCapitalize && !opts.reraId) { val = val.replace(/\b\w/g, c => c.toUpperCase()); }
+            this.value = val;
+            clearError(this.id);
+        });
+        input.addEventListener('blur', function () {
+            let val = normalizeSpaces(this.value);
+            if (!opts.noCapitalize && !opts.reraId) val = toTitleCase(val);
+            this.value = val;
+        });
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       TOAST SYSTEM
+    ───────────────────────────────────────────────────────────────── */
+    function showToast(type, title, message, duration = 5000) {
+        const container = document.getElementById('toastContainer');
+        const icons = {
+            error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+            success: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+            warning: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+        };
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type]}</div>
+            <div class="toast-body"><div class="toast-title">${title}</div>${message ? `<div>${message}</div>` : ''}</div>
+            <button class="toast-close" onclick="removeToast(this.parentElement)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>`;
+        container.appendChild(toast);
+        if (duration) setTimeout(() => removeToast(toast), duration);
+    }
+    function removeToast(toast) {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       CUSTOM DROPDOWN ENGINE
+    ───────────────────────────────────────────────────────────────── */
+    function toggleDropdown(ddId, triggerEl) {
+        const dd = document.getElementById(ddId);
+        const isOpen = dd.classList.contains('open');
+        closeAllDropdowns();
+        if (!isOpen) {
+            dd.classList.add('open');
+            triggerEl.classList.add('open');
+        }
+    }
+    function selectDropdown(ddId, hiddenId, textId, itemEl, chevronId) {
+        const val = itemEl.dataset.value;
+        const text = itemEl.textContent.trim();
+        document.getElementById(hiddenId).value = val;
+        const textEl = document.getElementById(textId);
+        textEl.textContent = val ? text : 'Select...';
+        textEl.classList.toggle('placeholder', !val);
+        document.querySelectorAll(`#${ddId} .dropdown-item`).forEach(i => i.classList.remove('selected'));
+        if (val) itemEl.classList.add('selected');
+        document.getElementById(ddId).classList.remove('open');
+        const trigger = document.getElementById(ddId).previousElementSibling?.previousElementSibling || document.querySelector(`[onclick*="${ddId}"]`);
+        if (trigger) trigger.classList.remove('open');
+        clearError(hiddenId);
+    }
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown-list.open').forEach(d => d.classList.remove('open'));
+        document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+        document.querySelectorAll('.unit-dropdown.open').forEach(u => u.classList.remove('open'));
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('.unit-select-wrapper')) {
+            closeAllDropdowns();
+        }
+    });
+
+    /* ─────────────────────────────────────────────────────────────────
+       UNIT DROPDOWN ENGINE
+    ───────────────────────────────────────────────────────────────── */
+    function toggleUnitDd(ddId, btnId) {
+        const dd = document.getElementById(ddId);
+        const isOpen = dd.classList.contains('open');
+        closeAllDropdowns();
+        if (!isOpen) dd.classList.add('open');
+    }
+    function selectUnit(ddId, btnId, unitHiddenId, value, label) {
+        document.getElementById(unitHiddenId).value = value;
+        const btn = document.getElementById(btnId);
+        btn.querySelector('.unit-label').textContent = label;
+        document.querySelectorAll(`#${ddId} .unit-option`).forEach(o => o.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+        document.getElementById(ddId).classList.remove('open');
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       CITY LOADER
+    ───────────────────────────────────────────────────────────────── */
+    const cities = {
+        Maharashtra: ["Pune", "Mumbai", "Nagpur"],
+        Jharkhand: ["Ranchi", "Hazaribagh"],
+        Delhi: ["New Delhi"]
+    };
+    function loadCities() {
+        const state = document.getElementById("state").value;
+        const dd = document.getElementById("city-dd");
+        document.getElementById("city").value = "";
+        document.getElementById("city-select-text").textContent = "Select City";
+        document.getElementById("city-select-text").classList.add('placeholder');
+        dd.innerHTML = `<div class="dropdown-item placeholder-item" data-value="">Select City</div>`;
+        if (cities[state]) {
+            cities[state].forEach(c => {
+                dd.innerHTML += `<div class="dropdown-item" data-value="${c}" onclick="selectDropdown('city-dd','city','city-select-text',this,'city-chevron')">${c}</div>`;
+            });
+        }
+        clearError('state'); clearError('city');
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       INIT DEFAULT ROWS (1 BHK, 1 Amenity, 1 Nearby on load)
+    ───────────────────────────────────────────────────────────────── */
+    function initDefaultRows() {
+        addBhk();
+        addAmenity();
+        addNearby();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       ADD BHK ROW (with custom dropdowns for type, price unit, area unit)
+    ───────────────────────────────────────────────────────────────── */
+    let bhkCount = 0;
+    function addBhk() {
+        bhkCount++;
+        const id = bhkCount;
+        const div = document.createElement("div");
+        div.className = "dynamic-row bhk-row";
+        div.dataset.id = id;
+        div.innerHTML = `
+            <div class="row-inputs" style="flex:1; gap:10px; display:flex; flex-wrap:wrap; align-items:flex-start;">
+                <!-- BHK Type dropdown -->
+                <div style="flex:1; min-width:130px; position:relative;">
+                    <div class="custom-select-wrapper">
+                        <div class="custom-select b-type-select" id="bhk-type-sel-${id}" onclick="toggleDropdown('bhk-type-dd-${id}', this)" style="padding:10px 36px 10px 12px; min-height:42px;">
+                            <span class="select-text placeholder b-type-text" id="bhk-type-text-${id}">BHK Type</span>
+                        </div>
+                        <svg class="select-chevron" style="top:50%;transform:translateY(-50%)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <input type="hidden" class="b-type" id="bhk-type-${id}" value="">
+                        <div class="dropdown-list" id="bhk-type-dd-${id}">
+                            ${['1 RK','1 BHK','2 BHK','3 BHK','4 BHK','5 BHK','Penthouse','Villa','Duplex','Studio'].map(t =>
+                                `<div class="dropdown-item" data-value="${t}" onclick="selectBhkType('${id}','${t}')">${t}</div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+                <!-- Price (plain number, auto-converts to words) -->
+                <div style="flex:1; min-width:150px;">
+                    <input type="number" placeholder="Price in ₹ (e.g. 5000000)" class="b-price no-icon-input" id="bhk-price-${id}" style="padding-left:12px; width:100%;" min="0" step="1">
+                    <div id="bhk-price-label-${id}" style="font-size:0.78rem;color:var(--primary);font-weight:600;margin-top:4px;min-height:14px;"></div>
+                </div>
+                <!-- Area with unit -->
+                <div style="flex:1; min-width:150px;">
+                    <div class="input-with-unit">
+                        <input type="text" placeholder="Area (E.g. 950)" class="b-area no-icon-input" id="bhk-area-${id}" style="padding-left:12px; flex:1;">
+                        <div class="unit-select-wrapper">
+                            <button type="button" class="unit-select-btn" id="bhk-area-unit-btn-${id}" onclick="toggleUnitDd('bhk-area-unit-dd-${id}', 'bhk-area-unit-btn-${id}')">
+                                <span class="unit-label">Sq.Ft</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="unit-dropdown" id="bhk-area-unit-dd-${id}">
+                                <div class="unit-option selected" onclick="selectUnit('bhk-area-unit-dd-${id}','bhk-area-unit-btn-${id}','bhk-area-unit-${id}','Sq.Ft','Sq.Ft')">Sq.Ft</div>
+                           
+                            </div>
+                            <input type="hidden" id="bhk-area-unit-${id}" value="Sq.Ft">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-remove" onclick="this.closest('.bhk-row').remove()" title="Remove">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>`;
+        document.getElementById("bhkContainer").appendChild(div);
+
+        // Price: digits and decimal only
+        const priceInp = div.querySelector('.b-price');
+        priceInp.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');
+            updatePriceLabel(id);
+        });
+
+        // Area: digits only
+        const areaInp = div.querySelector('.b-area');
+        areaInp.addEventListener('input', function() { this.value = this.value.replace(/[^0-9.]/g, ''); });
+
+        lucide.createIcons();
+    }
+
+    function selectBhkType(id, val) {
+        document.getElementById(`bhk-type-${id}`).value = val;
+        const textEl = document.getElementById(`bhk-type-text-${id}`);
+        textEl.textContent = val;
+        textEl.classList.remove('placeholder');
+        document.querySelectorAll(`#bhk-type-dd-${id} .dropdown-item`).forEach(i => i.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+        document.getElementById(`bhk-type-dd-${id}`).classList.remove('open');
+        document.getElementById(`bhk-type-sel-${id}`).classList.remove('open');
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       ADD AMENITY ROW
+    ───────────────────────────────────────────────────────────────── */
+    function addAmenity() {
+        const div = document.createElement("div");
+        div.className = "dynamic-row";
+        div.innerHTML = `
+            <input type="text" placeholder="E.g. Swimming Pool" class="amenity-val no-icon-input" style="flex:1;" title="Amenity Name">
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()" title="Remove">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>`;
+        document.getElementById("amenitiesContainer").appendChild(div);
+        attachInputBehavior(div.querySelector('.amenity-val'), { alphaOnly: true });
+        lucide.createIcons();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       ADD NEARBY ROW (with distance unit dropdown)
+    ───────────────────────────────────────────────────────────────── */
+    let nearbyCount = 0;
+    function addNearby() {
+        nearbyCount++;
+        const id = nearbyCount;
+        const div = document.createElement("div");
+        div.className = "dynamic-row nearby-row";
+        div.innerHTML = `
+            <input type="text" placeholder="Place Name (E.g. Pune Airport)" class="n-place no-icon-input" style="flex:2;" title="Landmark Name">
+            <div style="flex:1; min-width:150px;">
+                <div class="input-with-unit">
+                    <input type="text" placeholder="Distance (E.g. 5.2)" class="n-km no-icon-input" id="nearby-km-${id}" style="padding-left:12px; flex:1;">
+                    <div class="unit-select-wrapper">
+                        <button type="button" class="unit-select-btn" id="nearby-unit-btn-${id}" onclick="toggleUnitDd('nearby-unit-dd-${id}', 'nearby-unit-btn-${id}')">
+                            <span class="unit-label">km</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="unit-dropdown" id="nearby-unit-dd-${id}">
+                            <div class="unit-option selected" onclick="selectUnit('nearby-unit-dd-${id}','nearby-unit-btn-${id}','nearby-unit-${id}','km','km')">km</div>
+                            <div class="unit-option" onclick="selectUnit('nearby-unit-dd-${id}','nearby-unit-btn-${id}','nearby-unit-${id}','mile','mile')">mile</div>
+                        </div>
+                        <input type="hidden" id="nearby-unit-${id}" value="km">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-remove" onclick="this.closest('.nearby-row').remove()" title="Remove">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>`;
+        document.getElementById("nearbyContainer").appendChild(div);
+        attachInputBehavior(div.querySelector('.n-place'));
+        const kmInput = div.querySelector('.n-km');
+        kmInput.addEventListener('input', function() { this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); });
+        lucide.createIcons();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       FILE HANDLING — limit, preview, optimization
+    ───────────────────────────────────────────────────────────────── */
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    function handleFileSelect(inputId, previewContainerId, minFiles, maxFiles) {
+        const input = document.getElementById(inputId);
+        const files = Array.from(input.files);
+        const container = document.getElementById(previewContainerId);
+        clearError(inputId);
+
+        // Validate count
+        if (files.length < minFiles) {
+            showToast('warning', 'Not Enough Files', `Please select at least ${minFiles} photo.`);
+            input.value = ''; return;
+        }
+        if (files.length > maxFiles) {
+            showToast('warning', 'Too Many Files', `Maximum ${maxFiles} photo(s) allowed. You selected ${files.length}.`);
+            input.value = ''; return;
+        }
+
+        // Validate sizes
+        for (const f of files) {
+            if (f.size > MAX_FILE_SIZE) {
+                showToast('error', 'File Too Large', `"${f.name}" exceeds 5MB limit.`);
+                input.value = ''; return;
+            }
+        }
+
+        // Clear previous store & previews
+        fileStore[inputId] = [];
+        container.innerHTML = '';
+
+        // Process each file: optimize then preview
+        files.forEach((file, idx) => {
+            optimizeImage(file).then(optimized => {
+                fileStore[inputId][idx] = optimized;
+                const url = URL.createObjectURL(optimized);
+                const thumb = document.createElement('div');
+                thumb.className = 'preview-thumb';
+                thumb.innerHTML = `<img src="${url}" alt="Preview"><button class="preview-remove" onclick="removePreview('${inputId}','${previewContainerId}',${idx},this.closest('.preview-thumb'))">✕</button>`;
+                container.appendChild(thumb);
+            });
+        });
+
+        clearError(inputId);
+    }
+
+    function removePreview(inputId, previewContainerId, idx, thumbEl) {
+        fileStore[inputId].splice(idx, 1);
+        thumbEl.remove();
+        // Rebuild indices
+        const container = document.getElementById(previewContainerId);
+        Array.from(container.querySelectorAll('.preview-remove')).forEach((btn, i) => {
+            btn.setAttribute('onclick', `removePreview('${inputId}','${previewContainerId}',${i},this.closest('.preview-thumb'))`);
+        });
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       IMAGE OPTIMIZER (WebP, 1200px max, 75% quality)
+    ───────────────────────────────────────────────────────────────── */
+    function optimizeImage(file) {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = e => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const MAX_DIM = 1200;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_DIM || h > MAX_DIM) {
+                        if (w >= h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                        else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(blob => {
+                        // Wrap blob as File for upload
+                        const optimizedFile = new File([blob], file.name.replace(/\.\w+$/, '.webp'), { type: 'image/webp' });
+                        resolve(optimizedFile);
+                    }, 'image/webp', 0.75);
+                };
+            };
+        });
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       LEGACY compressImage (kept for compatibility)
+    ───────────────────────────────────────────────────────────────── */
+    async function compressImage(file) { return optimizeImage(file); }
+
+    /* ─────────────────────────────────────────────────────────────────
+       VIDEO HANDLING — virtual tour upload
+    ───────────────────────────────────────────────────────────────── */
+    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+    let videoFile = null;
+
+    function handleVideoSelect() {
+        const input = document.getElementById('virtualVideo');
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > MAX_VIDEO_SIZE) {
+            showToast('error', 'Video Too Large', `Video exceeds 100MB limit. Your file: ${(file.size/1024/1024).toFixed(1)}MB.`);
+            input.value = ''; return;
+        }
+        const allowed = ['video/mp4','video/webm','video/quicktime','video/mov'];
+        if (!allowed.includes(file.type) && !file.name.match(/\.(mp4|mov|webm)$/i)) {
+            showToast('error', 'Invalid Format', 'Only MP4, MOV, or WEBM video files are accepted.');
+            input.value = ''; return;
+        }
+        videoFile = file;
+        const url = URL.createObjectURL(file);
+        document.getElementById('videoPreviewEl').src = url;
+        document.getElementById('videoPreviewWrap').style.display = 'block';
+        document.getElementById('videoFileName').textContent = `📹 ${file.name} (${(file.size/1024/1024).toFixed(1)} MB)`;
+        showToast('success', 'Video Selected', `"${file.name}" ready to upload.`);
+    }
+
+    function removeVideo() {
+        videoFile = null;
+        const el = document.getElementById('videoPreviewEl');
+        el.pause(); el.src = '';
+        document.getElementById('videoPreviewWrap').style.display = 'none';
+        document.getElementById('videoFileName').textContent = '';
+        document.getElementById('virtualVideo').value = '';
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       SOCIAL LINK VALIDATOR
+    ───────────────────────────────────────────────────────────────── */
+    function isValidUrl(str) {
+        if (!str) return true; // optional fields
+        try { new URL(str); return true; } catch { return false; }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       FORM VALIDATION
+    ───────────────────────────────────────────────────────────────── */
+    function getCleanValue(id) {
+        const el = document.getElementById(id);
+        if (!el) return '';
+        let val = normalizeSpaces(el.value);
+        if (!['pincode', 'possession', 'reraId'].includes(id)) val = toTitleCase(val);
+        return val;
+    }
+
+    function validateForm() {
+        let isValid = true;
+        const errors = [];
+
+        ['developer','address','state','city','locality','pincode','status','possession','overview','interior','exterior','mainImage','contactNumber','youtubeLink','facebookLink','instagramLink']
+            .forEach(id => clearError(id));
+
+        // Developer
+        const developer = normalizeSpaces(document.getElementById('developer').value);
+        if (!developer) { showError('developer', 'Developer name is required.'); errors.push('Developer Name is required.'); isValid = false; }
+        else if (!/^[A-Za-z\s]+$/.test(developer)) { showError('developer', 'Alphabets only.'); errors.push('Developer Name must contain alphabets only.'); isValid = false; }
+        else if (developer.length < 2) { showError('developer', 'Min 2 characters.'); errors.push('Developer Name must be at least 2 characters.'); isValid = false; }
+
+        // Contact Number
+        const contact = document.getElementById('contactNumber').value.trim();
+        if (!contact) { showError('contactNumber', 'Contact number is required.'); errors.push('Contact Number is required.'); isValid = false; }
+        else if (!/^[\+\d][\d\s\-]{7,14}$/.test(contact)) { showError('contactNumber', 'Enter a valid phone number.'); errors.push('Contact Number is invalid.'); isValid = false; }
+
+        // RERA ID (optional but validate pattern if filled)
+        const reraId = document.getElementById('reraId').value.trim();
+        if (reraId && !/^[A-Z0-9\-\/]+$/.test(reraId)) {
+            showError('reraId', 'Only alphanumeric, / and - allowed.');
+            errors.push('RERA ID has invalid characters.'); isValid = false;
+        }
+
+        // Address
+        const address = normalizeSpaces(document.getElementById('address').value);
+        if (!address) { showError('address', 'Property address is required.'); errors.push('Property Address is required.'); isValid = false; }
+        else if (address.length < 5) { showError('address', 'Min 5 characters.'); errors.push('Property Address must be at least 5 characters.'); isValid = false; }
+
+        // State
+        if (!document.getElementById('state').value) { showError('state', 'Please select a state.'); errors.push('State is required.'); isValid = false; }
+
+        // City
+        if (!document.getElementById('city').value) { showError('city', 'Please select a city.'); errors.push('City is required.'); isValid = false; }
+
+        // Locality
+        const locality = normalizeSpaces(document.getElementById('locality').value);
+        if (!locality) { showError('locality', 'Locality is required.'); errors.push('Locality is required.'); isValid = false; }
+        else if (!/^[A-Za-z\s]+$/.test(locality)) { showError('locality', 'Alphabets only.'); errors.push('Locality must contain alphabets only.'); isValid = false; }
+
+        // Pincode
+        const pincode = document.getElementById('pincode').value.trim();
+        if (!pincode) { showError('pincode', 'Pincode is required.'); errors.push('Pincode is required.'); isValid = false; }
+        else if (!/^\d{6}$/.test(pincode)) { showError('pincode', 'Must be exactly 6 digits.'); errors.push('Pincode must be exactly 6 digits.'); isValid = false; }
+
+        // BHK type mandatory — every row must have a type selected
+        const bhkRows = document.querySelectorAll('.bhk-row');
+        if (bhkRows.length === 0) {
+            errors.push('At least one BHK variant is required.');
+            showToast('warning', 'BHK Required', 'Please add at least one BHK variant.');
+            isValid = false;
+        } else {
+            bhkRows.forEach((row, idx) => {
+                const typeVal = row.querySelector('.b-type')?.value || '';
+                if (!typeVal) {
+                    errors.push(`BHK Type is required for variant #${idx + 1}.`);
+                    // Highlight the select
+                    const sel = row.querySelector('.b-type-select');
+                    if (sel) sel.classList.add('error');
+                    isValid = false;
+                }
+            });
+            if (!isValid && !errors.find(e => e.includes('BHK Type'))) {
+                // already captured above
+            }
+        }
+
+        // Status
+        if (!document.getElementById('status').value) { showError('status', 'Please select a status.'); errors.push('Status is required.'); isValid = false; }
+
+        // Possession
+        const possession = document.getElementById('possession').value;
+        if (!possession) { showError('possession', 'Possession date is required.'); errors.push('Possession Date is required.'); isValid = false; }
+        else { const today = new Date(); today.setHours(0,0,0,0); if (new Date(possession) < today) { showError('possession', 'Cannot be in the past.'); errors.push('Possession Date cannot be in the past.'); isValid = false; } }
+
+        // Overview
+        const overview = normalizeSpaces(document.getElementById('overview').value);
+        if (!overview) { showError('overview', 'Project overview is required.'); errors.push('Project Overview is required.'); isValid = false; }
+        else if (overview.length < 20) { showError('overview', 'Min 20 characters.'); errors.push('Project Overview must be at least 20 characters.'); isValid = false; }
+
+        // Images
+        if (fileStore.interior.length === 0) { showError('interior', 'At least 1 interior photo required.'); errors.push('Interior photos are required (min 1).'); isValid = false; }
+        if (fileStore.exterior.length === 0) { showError('exterior', 'At least 1 exterior photo required.'); errors.push('Exterior photos are required (min 1).'); isValid = false; }
+        if (fileStore.mainImage.length === 0) { showError('mainImage', 'A main featured image is required.'); errors.push('Main Featured Image is required.'); isValid = false; }
+
+        // Social links (optional, but validate URL format if filled)
+        const ytLink = document.getElementById('youtubeLink').value.trim();
+        const fbLink = document.getElementById('facebookLink').value.trim();
+        const igLink = document.getElementById('instagramLink').value.trim();
+        if (ytLink && !isValidUrl(ytLink)) { showError('youtubeLink', 'Enter a valid URL.'); errors.push('YouTube link is invalid.'); isValid = false; }
+        if (fbLink && !isValidUrl(fbLink)) { showError('facebookLink', 'Enter a valid URL.'); errors.push('Facebook link is invalid.'); isValid = false; }
+        if (igLink && !isValidUrl(igLink)) { showError('instagramLink', 'Enter a valid URL.'); errors.push('Instagram link is invalid.'); isValid = false; }
+
+        // Show/hide error summary
+        const summary = document.getElementById('errorSummary');
+        const list = document.getElementById('errorList');
+        if (!isValid) {
+            list.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+            summary.classList.add('visible');
+            summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            summary.classList.remove('visible');
+        }
+
+        return isValid;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       PROGRESS BAR
+    ───────────────────────────────────────────────────────────────── */
+    function setProgress(pct, label) {
+        document.getElementById('progressBarFill').style.width = pct + '%';
+        document.getElementById('uploadPercent').textContent = Math.round(pct) + '%';
+        document.getElementById('uploadStatus').textContent = label;
+    }
+
+    function cancelUpload() {
+        uploadCancelled = true;
+        document.getElementById('uploadProgressWrap').style.display = 'none';
+        showToast('warning', 'Upload Cancelled', 'The upload was cancelled by user.');
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       SUCCESS MODAL
+    ───────────────────────────────────────────────────────────────── */
+    function showSuccessModal() {
+        const modal = document.getElementById('successModal');
+        modal.classList.add('show');
+        // Confetti
+        const confetti = document.getElementById('modalConfetti');
+        confetti.innerHTML = '';
+        const colors = ['#4c1d95','#d4af37','#6d28d9','#f1d592','#16a34a','#86efac'];
+        for (let i = 0; i < 24; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'confetti-dot';
+            dot.style.cssText = `left:${Math.random()*100}%; top:${Math.random()*30}%; background:${colors[i%colors.length]}; animation-delay:${Math.random()*1}s; animation-duration:${2+Math.random()}s;`;
+            confetti.appendChild(dot);
+        }
+    }
+    function closeSuccessModal() {
+        document.getElementById('successModal').classList.remove('show');
+        resetForm();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       RESET FORM
+    ───────────────────────────────────────────────────────────────── */
+    function resetForm() {
+        document.getElementById('propertyForm').reset();
+        // Reset hidden fields & select displays
+        ['state','city','status'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('state-select-text').textContent = 'Select State';
+        document.getElementById('state-select-text').classList.add('placeholder');
+        document.getElementById('city-select-text').textContent = 'Select City';
+        document.getElementById('city-select-text').classList.add('placeholder');
+        document.getElementById('status-select-text').textContent = 'Select Status';
+        document.getElementById('status-select-text').classList.add('placeholder');
+        document.querySelectorAll('.dropdown-item.selected').forEach(i => i.classList.remove('selected'));
+        // Clear previews & stores
+        fileStore.interior = []; fileStore.exterior = []; fileStore.mainImage = [];
+        ['interior-previews','exterior-previews','main-previews'].forEach(id => {
+            document.getElementById(id).innerHTML = '';
+        });
+        // Clear video
+        removeVideo();
+        // Clear social links
+        ['youtubeLink','facebookLink','instagramLink','contactNumber'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        // Clear dynamic containers, re-init defaults
+        document.getElementById('bhkContainer').innerHTML = '';
+        document.getElementById('amenitiesContainer').innerHTML = '';
+        document.getElementById('nearbyContainer').innerHTML = '';
+        initDefaultRows();
+        // Reset progress
+        document.getElementById('uploadProgressWrap').style.display = 'none';
+        setProgress(0, 'Preparing...');
+        document.getElementById('errorSummary').classList.remove('visible');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       SUBMIT
+    ───────────────────────────────────────────────────────────────── */
+    async function submitProperty() {
+        if (!validateForm()) return;
+
+        uploadCancelled = false;
+        const progressWrap = document.getElementById('uploadProgressWrap');
+        progressWrap.style.display = 'block';
+        setProgress(0, 'Preparing data...');
+
+        try {
+            // Collect BHK data
+            const bhks = Array.from(document.querySelectorAll('.bhk-row')).map(r => {
+                const typeInput = r.querySelector('.b-type');
+                const priceInput = r.querySelector('.b-price');
+                const areaInput = r.querySelector('.b-area');
+                const areaUnit = r.querySelector('[id^="bhk-area-unit-"]')?.value || 'Sq.Ft';
+                const rawPrice = priceInput ? parseFloat(priceInput.value.trim()) : null;
+                return {
+                    type: typeInput ? normalizeSpaces(typeInput.value) : '',
+                    price: rawPrice || null,
+                    price_words: rawPrice ? numberToIndianWords(rawPrice) : '',
+                    sqft: areaInput ? areaInput.value.trim() : '',
+                    areaUnit
+                };
+            }).filter(x => x.type);
+
+            const amens = Array.from(document.querySelectorAll('.amenity-val'))
+                .map(i => normalizeSpaces(toTitleCase(i.value))).filter(x => x);
+
+            const landmarks = Array.from(document.querySelectorAll('.nearby-row')).map(r => {
+                const placeInput = r.querySelector('.n-place');
+                const kmInput = r.querySelector('.n-km');
+                const unitInput = r.querySelector('[id^="nearby-unit-"]');
+                return {
+                    place: placeInput ? normalizeSpaces(toTitleCase(placeInput.value)) : '',
+                    distance: kmInput ? kmInput.value.trim() : '',
+                    unit: unitInput ? unitInput.value : 'km'
+                };
+            }).filter(x => x.place);
+
+            const interiorFiles = fileStore.interior;
+            const exteriorFiles = fileStore.exterior;
+            const mainFile = fileStore.mainImage[0];
+
+            let total = interiorFiles.length + exteriorFiles.length + (mainFile ? 1 : 0);
+            let done = 0, intUrls = [], extUrls = [], mainUrl = "";
+
+            async function up(file) {
+                if (uploadCancelled) throw new Error('Upload cancelled by user.');
+                const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.webp`;
+                const { error } = await client.storage.from("property-images").upload(path, file, { contentType: 'image/webp' });
+                if (error) throw error;
+                done++;
+                const pct = (done / total) * 90;
+                setProgress(pct, `Uploading photos... (${done}/${total})`);
+                return client.storage.from("property-images").getPublicUrl(path).data.publicUrl;
+            }
+
+            setProgress(5, 'Uploading interior photos...');
+            for (let f of interiorFiles) intUrls.push(await up(f));
+
+            setProgress(40, 'Uploading exterior photos...');
+            for (let f of exteriorFiles) extUrls.push(await up(f));
+
+            if (mainFile) {
+                setProgress(75, 'Uploading featured image...');
+                mainUrl = await up(mainFile);
+            }
+
+            // Upload virtual tour video if present
+            let videoUrl = null;
+            if (videoFile) {
+                if (uploadCancelled) throw new Error('Upload cancelled by user.');
+                setProgress(82, 'Uploading virtual tour video...');
+                const vidExt = videoFile.name.split('.').pop().toLowerCase();
+                const vidPath = `videos/${Date.now()}_${Math.random().toString(36).slice(2)}.${vidExt}`;
+                const { error: vidErr } = await client.storage.from("property-images").upload(vidPath, videoFile, { contentType: videoFile.type });
+                if (vidErr) throw vidErr;
+                videoUrl = client.storage.from("property-images").getPublicUrl(vidPath).data.publicUrl;
+            }
+
+            setProgress(90, 'Saving to database...');
+
+            const { error } = await client.from("properties").insert([{
+                developer: getCleanValue('developer'),
+                contact_number: document.getElementById('contactNumber').value.trim(),
+                rera_id: document.getElementById('reraId').value.trim().toUpperCase() || null,
+                address: getCleanValue('address'),
+                state: document.getElementById("state").value,
+                city: document.getElementById("city").value,
+                locality: getCleanValue('locality'),
+                pincode: document.getElementById("pincode").value.trim(),
+                bhk_options: bhks,
+                amenities: amens,
+                nearby_landmarks: landmarks,
+                status: document.getElementById("status").value,
+                possession: document.getElementById("possession").value,
+                overview: getCleanValue('overview'),
+                main_image: mainUrl,
+                interior: intUrls,
+                exterior: extUrls,
+                virtual_tour_video: videoUrl,
+                youtube_link: document.getElementById('youtubeLink').value.trim() || null,
+                facebook_link: document.getElementById('facebookLink').value.trim() || null,
+                instagram_link: document.getElementById('instagramLink').value.trim() || null,
+                posted_by_user_id: currentUserProfile?.id || null,
+                posted_by_user_code: currentUserProfile?.user_code || null,
+                posted_by_name: currentUserProfile?.name || null
+            }]);
+
+            if (uploadCancelled) return;
+            if (error) throw error;
+
+            setProgress(100, '✅ Property published!');
+            document.getElementById('cancelUploadBtn').style.display = 'none';
+            setTimeout(() => {
+                progressWrap.style.display = 'none';
+                document.getElementById('cancelUploadBtn').style.display = 'flex';
+                showSuccessModal();
+            }, 800);
+
+        } catch (err) {
+            if (err.message === 'Upload cancelled by user.') return;
+            progressWrap.style.display = 'none';
+            showToast('error', 'Submission Failed', err.message, 8000);
+        }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       DOMContentLoaded — live input behaviors
+    ───────────────────────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        attachInputBehavior(document.getElementById('developer'), { alphaOnly: true });
+        attachInputBehavior(document.getElementById('address'));
+        attachInputBehavior(document.getElementById('locality'), { alphaOnly: true });
+        attachInputBehavior(document.getElementById('pincode'), { numericOnly: true, noCapitalize: true });
+        attachInputBehavior(document.getElementById('overview'));
+        attachInputBehavior(document.getElementById('reraId'), { reraId: true });
+
+        // Contact number: allow +, digits, spaces, dashes
+        const contactEl = document.getElementById('contactNumber');
+        contactEl.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9\+\s\-]/g, '');
+            clearError('contactNumber');
+        });
+
+        ['possession'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => clearError(id));
+        });
+    });
+
+    async function logout() { await client.auth.signOut(); window.location = "login.html"; }
+</script>
+</body>
+</html>
